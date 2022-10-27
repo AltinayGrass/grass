@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Blockly</title>
+    <h2>Hello Blockly form noetic express</h2>
+    <style>
+        textarea {
+          resize: none;
+        }
+    </style>
+</head>
+
+<body>
+    <script src="./javascripts/acorn_interpreter.js"></script>
+    <script src="./javascripts/blockly/blockly_compressed.js"></script>
+    <script src="./javascripts/blockly/blocks_compressed.js"></script>
+    <script src="./javascripts/blockly/msg/en.js"></script>
+    <script src="./javascripts/blockly/python_compressed.js"></script>
+    <script src="./javascripts/roslib/build/roslib.js"></script>
+    <script src="./javascripts/storage.js"></script>    
+
+    <button class="mode-maker mdl-button" onclick="loadProgram()" id="load">Load</button>
+    <button class="mode-edit mdl-button mdl-js-button" onclick="runProgram()" id="run" >Step</button>
+    <button class="mode-blockly mdl-button mdl-js-button" onclick="saveProgram()" id="save">Save</button>
+    
+    <!--form name="myCode" id="myCode" method="POST" action="http://172.17.0.3:1880/blockly"-->
+    <form name="myCode" id="myCode" method="POST" action="/post-test">
+        <textarea type="text" id="codearea" name="code" rows="4" cols="50">
+          </textarea>
+        <button type="submit" id="stepButton" onclick="stepCode()"> Run </button>
+    </form>
+
+    <div id="statusIndicator">
+        <p id="connecting">
+          Connecting to rosbridge...
+        </p>
+        <p id="connected" style="color:#00D600; display:none">
+          Connected
+        </p>
+        <p id="error" style="color:#FF0000; display:none">
+          Error in the backend!
+        </p>
+        <p id="closed" style="display:none">
+          Connection closed.
+        </p>
+    </div>
+
+    <xml xmlns="https://developers.google.com/blockly/xml" id="toolbox" style="display: none">
+      <block type="motion_lin">
+        <field name="command">LIN</field>
+        <field name="relative"></field>
+        <field name="pose">" "</field>
+        <field name="vel">2.0</field>
+      </block>
+      <block type="motion_ptp">
+        <field name="command">PTT</field>
+        <field name="relative"></field>
+        <field name="joints">" "</field>
+        <field name="vel">100</field>
+      </block>
+      <block type="controls_repeat_ext">
+        <value name="TIMES">
+          <shadow type="math_number">
+            <field name="NUM">1</field>
+          </shadow>
+        </value>
+      </block>
+    </xml>
+<script>
+  
+  // -----------------
+  var ros = new ROSLIB.Ros();
+
+  // If there is an error on the backend, an 'error' emit will be emitted.
+  ros.on('error', function(error) {
+    document.getElementById('connecting').style.display = 'none';
+    document.getElementById('connected').style.display = 'none';
+    document.getElementById('closed').style.display = 'none';
+    document.getElementById('error').style.display = 'inline';
+    console.log(error);
+  });
+
+  // Find out exactly when we made a connection.
+  ros.on('connection', function() {
+    console.log('Connection made!');
+    document.getElementById('connecting').style.display = 'none';
+    document.getElementById('error').style.display = 'none';
+    document.getElementById('closed').style.display = 'none';
+    document.getElementById('connected').style.display = 'inline';
+  });
+
+  ros.on('close', function() {
+    console.log('Connection closed.');
+    document.getElementById('connecting').style.display = 'none';
+    document.getElementById('connected').style.display = 'none';
+    document.getElementById('closed').style.display = 'inline';
+  });
+
+  // Create a connection to the rosbridge WebSocket server.
+  
+  ros.connect('ws://localhost:9090');
+
+  var listener = new ROSLIB.Topic({
+    ros : ros,
+    name : '/joint_states',
+    messageType : 'sensor_msgs/JointState'
+  });
+  
+  var pose = " "
+  var ori = " "
+  
+ var tfClient = new ROSLIB.TFClient({
+    ros : ros,
+    fixedFrame : 'base_link',
+    angularThres : 0.01,
+    transThres : 0.01
+  });
+
+  tfClient.subscribe('flange', function(tf) {
+    //console.log(tf.translation.x,tf.translation.y,tf.translation.z);
+    pose=tf.translation.x.toFixed(3)+', '+tf.translation.y.toFixed(3)+', '+ tf.translation.z.toFixed(3);
+  });
+
+  var position =" "
+  // Then we add a callback to be called every time a message is published on this topic.
+  listener.subscribe(function(message) {
+    let pos =" "
+    //console.log('Received message on ' + listener.name + ': ' + message.position);
+    for ( let i=0;i<message.position.length;i++) {
+        angle=message.position[i];//*180.0/Math.PI;
+        pos+=angle.toFixed(3);
+        if (i<5) pos+=','
+        }
+    position=pos
+  });
+</script>
+
+    <div id="blocklyDiv" style="height: 480px; width: 1040px;">
+        <script>
+          Blockly.defineBlocksWithJsonArray( [
+                {
+                "type": "motion_ptp",
+                "message0": "%1 %2 %3 Vel %4 %%",
+                "args0": [
+                  {
+                    "type": "field_label_serializable",
+                    "name": "command",
+                    "text": "PTT"
+                  },
+                  {
+                    "type": "field_dropdown",
+                    "name": "relative",
+                    "options": [
+                      [
+                        " ",
+                        " "
+                      ],
+                      [
+                        "REL",
+                        "relative=True,"
+                      ]
+                    ]
+                  },
+                  {
+                    "type": "field_input",
+                    "name": "joints",
+                    "text": "\" \""
+                  },
+                  {
+                    "type": "field_input",
+                    "name": "vel",
+                    "text": "100"
+                  }
+                ],
+                "previousStatement": null,
+                "nextStatement": null,
+                "colour": 230,
+                "tooltip": "",
+                "helpUrl": ""
+              },
+              {
+                "type": "motion_lin",
+                "message0": "%1 %2 %3 Vel %4 m/s",
+                "args0": [
+                  {
+                    "type": "field_label_serializable",
+                    "name": "command",
+                    "text": "LIN"
+                  },
+                  {
+                    "type": "field_dropdown",
+                    "name": "relative",
+                    "options": [
+                      [
+                        " ",
+                        " "
+                      ],
+                      [
+                        "REL",
+                        "relative=True,"
+                      ]
+                    ]
+                  },
+                  {
+                    "type": "field_input",
+                    "name": "pose",
+                    "text": "\" \""
+                  },
+                  {
+                    "type": "field_input",
+                    "name": "vel",
+                    "text": "2.0"
+                  }
+                ],
+                "previousStatement": null,
+                "nextStatement": null,
+                "colour": 230,
+                "tooltip": "",
+                "helpUrl": ""
+              }]
+              );
+
+              Blockly.Python['motion_ptp'] = function(block) {
+                var dropdown_relative = block.getFieldValue('relative');
+                var text_joints = block.getFieldValue('joints');
+                var text_vel = block.getFieldValue('vel');
+                // TODO: Assemble Python into code variable.
+                var code = 'r.move(Ptp(goal=[' + text_joints+ '], ' + 
+                                      dropdown_relative + 
+                                      'vel_scale= ' + text_vel/100 +  
+                                      ', target_link="flange", reference_frame="base_link"' +
+                                      ' ))\n' ;
+                return code;
+              };
+
+              Blockly.Python['motion_lin'] = function(block) {
+                var dropdown_relative = block.getFieldValue('relative');
+                var text_pose = block.getFieldValue('pose');
+                var text_vel = block.getFieldValue('vel');
+                // TODO: Assemble Python into code variable.
+                var code = 'r.move(Lin(goal=Pose(position=Point(' + text_pose+ ')), ' + 
+                                      dropdown_relative + 
+                                      'vel_scale= ' + text_vel/100 +  
+                                      ', target_link="flange", reference_frame="base_link"' +
+                                      ' ))\n' ;
+                return code;
+              };
+
+            var savestate = new Blockly.Workspace()
+
+            function loadProgram() 
+                {
+                    Blockly.serialization.workspaces.load(savestate,workspace);         
+                }
+
+            function saveProgram()
+                {
+                    savestate=Blockly.serialization.workspaces.save(workspace);
+                }
+
+            var runProgram = function() {
+                //loadProgram();
+                var step_auto = document.getElementById('run');
+                if (step_auto.innerHTML === "Step") step_auto.innerHTML="Auto"
+                else step_auto.innerHTML="Step"
+            }
+            
+            var toolbox = document.getElementById("toolbox");
+
+            var options = { 
+              toolbox : toolbox, 
+              collapse : false, 
+              comments : false, 
+              disable : false, 
+              maxBlocks : Infinity, 
+              trashcan : true, 
+              horizontalLayout : true, 
+              toolboxPosition : 'start', 
+              css : true, 
+              media : 'https://blockly-demo.appspot.com/static/media/', 
+              rtl : false, 
+              scrollbars : true, 
+              sounds : true, 
+              oneBasedIndex : true, 
+              grid : {
+                spacing : 20, 
+                length : 1, 
+                colour : '#888', 
+                snap : false
+              }, 
+              zoom : {
+                controls : true, 
+                wheel : true, 
+                startScale : 1, 
+                maxScale : 3, 
+                minScale : 0.5, 
+                scaleSpeed : 0.5
+              }
+            };
+
+    /* Inject your workspace */ 
+    var workspace = Blockly.inject('blocklyDiv', options);
+   
+    workspace.addChangeListener(onchange);
+ 
+    setTimeout(BlocklyStorage.restoreBlocks, 0);
+    BlocklyStorage.backupOnUnload();
+
+    var outputArea = document.getElementById('codearea');
+
+    function stepCode() {
+        var latestCode = Blockly.Python.workspaceToCode(workspace);
+        alert('Ready to execute the following code\n' +
+              '===================================\n' + latestCode);
+        outputArea.value = latestCode;
+        return;
+    }
+
+            function onchange(event) {
+                if (event.type == Blockly.Events.BLOCK_CREATE &&
+                    event.json.type == "motion_ptp") {
+                        workspace.getBlockById(event.blockId).setFieldValue(position,"joints");
+                }
+                if (event.type == Blockly.Events.BLOCK_CREATE &&
+                    event.json.type == "motion_lin") {
+                        workspace.getBlockById(event.blockId).setFieldValue(pose,"pose");
+                }
+
+               // if (!event.isUiEvent) {
+                    // Something changed.  Interpreter needs to be reloaded.
+               //     resetStepUi(true);
+               // }
+            }
+
+        </script>
+    </div>
+
+</body>
+
+</html>
