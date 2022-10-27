@@ -1,3 +1,3 @@
 # grass
 
-Blockly integrated Experessjs comminicated with ROS noetic over roslibjs
+Blockly integrated Expressjs comminicated with ROS noetic over roslibjs
