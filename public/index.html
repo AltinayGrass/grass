@@ -120,6 +120,7 @@
   tfClient.subscribe('flange', function(tf) {
     //console.log(tf.translation.x,tf.translation.y,tf.translation.z);
     pose=tf.translation.x.toFixed(3)+', '+tf.translation.y.toFixed(3)+', '+ tf.translation.z.toFixed(3);
+    ori=tf.orientation.x.toFixed(4)+', '+tf.orientation.y.toFixed(4)+', '+tf.orientation.z.toFixed(4)+', '+tf.orientation.w.toFixed(4);
   });
 
   var position =" "
@@ -181,7 +182,7 @@
               },
               {
                 "type": "motion_lin",
-                "message0": "%1 %2 %3 Vel %4 m/s",
+                "message0": "%1 %2 Pose %3 Ori %4 Vel %5 m/s",
                 "args0": [
                   {
                     "type": "field_label_serializable",
@@ -207,6 +208,12 @@
                     "name": "pose",
                     "text": "\" \""
                   },
+                  {
+                    "type": "field_input",
+                    "name": "ori",
+                    "text": "\" \""
+                  },
+
                   {
                     "type": "field_input",
                     "name": "vel",
@@ -325,7 +332,8 @@
                 if (event.type == Blockly.Events.BLOCK_CREATE &&
                     event.json.type == "motion_lin") {
                         workspace.getBlockById(event.blockId).setFieldValue(pose,"pose");
-                }
+                        workspace.getBlockById(event.blockId).setFieldValue(ori,"ori");
+                      }
 
                // if (!event.isUiEvent) {
                     // Something changed.  Interpreter needs to be reloaded.
