@@ -21,7 +21,7 @@ app.post('/post-test',(req,res)=>{
   console.log('Got-body',req.body);
   let entrywith = 
 '#!/usr/bin/env python3\n'+
-'from geometry_msgs.msg import Pose, Point\n'+
+'from geometry_msgs.msg import Pose, Point, Quaternion\n'+
 'from pilz_robot_programming import *\n'+
 'import math\n'+
 'import rospy\n'+

@@ -18,7 +18,8 @@
     <script src="./javascripts/blockly/msg/en.js"></script>
     <script src="./javascripts/blockly/python_compressed.js"></script>
     <script src="./javascripts/roslib/build/roslib.js"></script>
-    <script src="./javascripts/storage.js"></script>    
+    <script src="./javascripts/storage.js"></script>
+    <script src="./javascripts/three/build/three.js"></script>    
 
     <button class="mode-maker mdl-button" onclick="loadProgram()" id="load">Load</button>
     <button class="mode-edit mdl-button mdl-js-button" onclick="runProgram()" id="run" >Step</button>
@@ -110,6 +111,7 @@
   var pose = " "
   var ori = " "
   
+  
  var tfClient = new ROSLIB.TFClient({
     ros : ros,
     fixedFrame : 'base_link',
@@ -120,7 +122,9 @@
   tfClient.subscribe('flange', function(tf) {
     //console.log(tf.translation.x,tf.translation.y,tf.translation.z);
     pose=tf.translation.x.toFixed(3)+', '+tf.translation.y.toFixed(3)+', '+ tf.translation.z.toFixed(3);
-    ori=tf.orientation.x.toFixed(4)+', '+tf.orientation.y.toFixed(4)+', '+tf.orientation.z.toFixed(4)+', '+tf.orientation.w.toFixed(4);
+    var quaternion = new THREE.Quaternion(tf.rotation.x,tf.rotation.y,tf.rotation.z,tf.rotation.w);
+    var euler= new THREE.Euler().setFromQuaternion(quaternion);
+    ori=euler.x.toFixed(3)+', '+euler.y.toFixed(3)+', '+euler.z.toFixed(3);
   });
 
   var position =" "
@@ -147,7 +151,7 @@
                   {
                     "type": "field_label_serializable",
                     "name": "command",
-                    "text": "PTT"
+                    "text": "PPT"
                   },
                   {
                     "type": "field_dropdown",
@@ -244,11 +248,12 @@
               Blockly.Python['motion_lin'] = function(block) {
                 var dropdown_relative = block.getFieldValue('relative');
                 var text_pose = block.getFieldValue('pose');
+                var text_ori = block.getFieldValue('ori')
                 var text_vel = block.getFieldValue('vel');
                 // TODO: Assemble Python into code variable.
-                var code = 'r.move(Lin(goal=Pose(position=Point(' + text_pose+ ')), ' + 
+                var code = 'r.move(Lin(goal=Pose(position=Point(' + text_pose+ '), orientation=from_euler(' +text_ori + ')), ' + 
                                       dropdown_relative + 
-                                      'vel_scale= ' + text_vel/100 +  
+                                      'vel_scale= ' + text_vel/2.0 +  
                                       ', target_link="flange", reference_frame="base_link"' +
                                       ' ))\n' ;
                 return code;
