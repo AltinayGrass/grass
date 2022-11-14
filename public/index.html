@@ -101,7 +101,7 @@
 
   // Create a connection to the rosbridge WebSocket server.
   
-  ros.connect('ws://localhost:9090');
+  ros.connect('ws://172.17.0.2:9090');
 
   var listener = new ROSLIB.Topic({
     ros : ros,
